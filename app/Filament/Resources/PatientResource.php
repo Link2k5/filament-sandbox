@@ -3,15 +3,13 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PatientResource\Pages;
-use App\Filament\Resources\PatientResource\RelationManagers;
+use App\Filament\Resources\PatientResource\RelationManagers\TreatmentsRelationManager;
 use App\Models\Patient;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PatientResource extends Resource
 {
@@ -23,7 +21,38 @@ class PatientResource extends Resource
     {
         return $form
             ->schema([
-                //
+                Forms\Components\TextInput::make('name')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\Select::make('type')
+                    ->options([
+                        'cat' => 'Cat',
+                        'dog' => 'Dog',
+                        'rabbit' => 'Rabbit',
+                    ])
+                    ->required(),
+                Forms\Components\DatePicker::make('date_of_birth')
+                    ->required()
+                    ->maxDate(now()),
+                Forms\Components\Select::make('owner_id')
+                    ->relationship('owner', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('name')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('email')
+                            ->label('Email Address')
+                            ->email()
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('phone')
+                            ->label('Phone Number')
+                            ->tel()
+                            ->required(),
+                    ])
+                    ->required(),
             ]);
     }
 
@@ -31,10 +60,21 @@ class PatientResource extends Resource
     {
         return $table
             ->columns([
-                //
+                Tables\Columns\TextColumn::make('name')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('type'),
+                Tables\Columns\TextColumn::make('date_of_birth')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('owner.name')
+                    ->searchable(),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('type')
+                    ->options([
+                        'cat' => 'Cat',
+                        'dog' => 'Dog',
+                        'rabbit' => 'Rabbit',
+                    ]),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -45,14 +85,14 @@ class PatientResource extends Resource
                 ]),
             ]);
     }
-    
+
     public static function getRelations(): array
     {
         return [
-            //
+            TreatmentsRelationManager::class,
         ];
     }
-    
+
     public static function getPages(): array
     {
         return [
@@ -60,5 +100,5 @@ class PatientResource extends Resource
             'create' => Pages\CreatePatient::route('/create'),
             'edit' => Pages\EditPatient::route('/{record}/edit'),
         ];
-    }    
+    }
 }
